@@ -8,23 +8,36 @@ We use [uv](https://github.com/astral-sh/uv), a fast Python package manager and 
 ## Installation
 
 ### 1. Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
+## ✅ Steps to install dependencies after cloning a uv project
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/your-uv-project.git
+cd your-uv-project
 
-Verify:
-uv --version
+# 2. Create and activate the virtual environment
+uv venv
+# source .venv/bin/activate  # On macOS/Linux
+# .venv\Scripts\activate      # On Windows
 
----
+# 3. Install all dependencies from pyproject.toml
+uv pip install .
+# uv pip install -r requirements.txt  # Optional: only if using requirements.txt
+
+```
+
 
 ## Running the API Server
 
 Run the server with:
 uv run server.py
 
+Dev
+uv run uvicorn server:app --reload
+
 Or specify a module:
 uv run python -m server
 
 By default, the server starts on http://127.0.0.1:8000  
-(you can adjust host/port in server.py).
 
 ---
 
