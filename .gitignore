@@ -10,4 +10,4 @@ wheels/
 .venv
 
 db
-gis_data
+gis_data/*
