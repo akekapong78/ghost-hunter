@@ -1,0 +1,15 @@
+services:
+  db:
+    hostname: vector-store
+    container_name: vector-store
+    image: pgvector/pgvector:pg17
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD}
+    volumes:
+      - ./db/pgvector/data:/var/lib/postgresql/data
+      - ./db/pgvector/init/init.sql:/docker-entrypoint-initdb.d/init.sql
