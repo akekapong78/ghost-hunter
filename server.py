@@ -27,6 +27,9 @@ class GisVectorItem(BaseModel):
     billing_month: str | None = None
     similarity_score: float | None = None
 
+class GisReportResponse(BaseModel):
+    results: List[GisVectorItem]
+
 # DB connection
 def get_connection():
     return psycopg2.connect(
@@ -37,7 +40,7 @@ def get_connection():
         port="5432"
     )
 
-@app.post("/gis-report", response_model=List[GisVectorItem])
+@app.post("/gis-report", response_model=GisReportResponse)
 def search(req: NameRequest = Body(...)):
     names = [n.strip() for n in req.name_string.split("|") if n.strip()]
     results: List[GisVectorItem] = []
@@ -51,7 +54,7 @@ def search(req: NameRequest = Body(...)):
                            1 - (embedding <=> %s::vector) AS similarity_score
                     FROM gis_vector
                     ORDER BY similarity_score DESC
-                    LIMIT 5;
+                    LIMIT 1;
                 """, (query_embedding,))
                 rows = cur.fetchall()
 
@@ -67,7 +70,7 @@ def search(req: NameRequest = Body(...)):
                         billing_month=None,
                         similarity_score=float(row[6]),
                     ))
-    return results
+    return GisReportResponse(results=results)
 
 
 # mock function
@@ -88,3 +91,7 @@ def mock_row(name: str) -> GisVectorItem:
 def mock_search(req: NameRequest = Body(...)):
     names = [n.strip() for n in req.name_string.split("|") if n.strip()]
     return [mock_row(name) for name in names]
+
+
+# uv run uvicorn server:app --reload
+# https://n0136mmn-8000.asse.devtunnels.ms/gis-report
