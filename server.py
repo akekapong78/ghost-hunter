@@ -50,7 +50,7 @@ def search(req: NameRequest = Body(...)):
             for name in names:
                 query_embedding = embedder.encode(name).tolist()
                 cur.execute("""
-                    SELECT ca_number, pea_number, customer_name, customer_address, lat, long,
+                    SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
                            1 - (embedding <=> %s::vector) AS similarity_score
                     FROM gis_vector
                     ORDER BY similarity_score DESC
@@ -64,11 +64,11 @@ def search(req: NameRequest = Body(...)):
                         pea_number=row[1],
                         customer_name=row[2],
                         customer_address=row[3],
-                        office_code=None,
-                        lat=float(row[4]),
-                        long=float(row[5]),
-                        billing_month=None,
-                        similarity_score=float(row[6]),
+                        office_code=row[4],
+                        lat=float(row[5]),
+                        long=float(row[6]),
+                        billing_month=row[7],
+                        similarity_score=float(row[8]),
                     ))
     return GisReportResponse(results=results)
 
