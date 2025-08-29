@@ -33,10 +33,10 @@ class GisReportResponse(BaseModel):
 # DB connection
 def get_connection():
     return psycopg2.connect(
-        dbname="rag-pea",
-        user="leocan",
-        password="leocanza",
-        host="localhost",
+        dbname="vector_db",
+        user="postgres",
+        password="postgres",
+        host="172.30.211.105",
         port="5432"
     )
 
@@ -92,6 +92,10 @@ def mock_search(req: NameRequest = Body(...)):
     names = [n.strip() for n in req.name_string.split("|") if n.strip()]
     return [mock_row(name) for name in names]
 
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "version": 1.2}
 
 # uv run uvicorn server:app --reload
 # https://n0136mmn-8000.asse.devtunnels.ms/gis-report

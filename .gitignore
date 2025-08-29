@@ -11,3 +11,5 @@ wheels/
 
 db
 gis_data/*
+
+log.txt
