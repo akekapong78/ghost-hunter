@@ -49,6 +49,7 @@ def search(req: NameRequest = Body(...)):
         with conn.cursor() as cur:
             for name in names:
                 # Option 1. Fuzzy matching using pg_trgm
+                cur.execute("SET pg_trgm.similarity_threshold = 0.5;")
                 cur.execute("""
                     SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
                         similarity(customer_name, %s) AS similarity_score
