@@ -63,7 +63,7 @@ def search(req: NameRequest = Body(...)):
                         SELECT 
                             ca_number, 
                             pea_number, 
-                            LEFT(customer_name, 5) || REPEAT('*', GREATEST(LENGTH(customer_name) - 5, 0)) AS customer_name,
+                            LEFT(customer_name, LENGTH(customer_name) - 5) || REPEAT('*', 5) AS customer_name,
                             customer_address, 
                             office_code, 
                             lat, 
@@ -98,7 +98,7 @@ def search(req: NameRequest = Body(...)):
                         SELECT 
                             ca_number, 
                             pea_number, 
-                            LEFT(customer_name, 5) || REPEAT('*', GREATEST(LENGTH(customer_name) - 5, 0)) AS customer_name,
+                            LEFT(customer_name, LENGTH(customer_name) - 5) || REPEAT('*', 5) AS customer_name,
                             customer_address, 
                             office_code, 
                             lat, 
@@ -153,7 +153,8 @@ def mock_search(req: NameRequest = Body(...)):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": 1.6, "message": "add last 5 * for names"}
+    return {"status": "ok", "version": 1.7, "message": "add last 5 * for names"}
 
 # uv run uvicorn server:app --reload
-# https://n0136mmn-8000.asse.devtunnels.ms/gis-report
+# cd nssm-2.24\win64
+# nssm start ghost-hunter-api
