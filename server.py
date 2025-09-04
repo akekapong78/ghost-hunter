@@ -124,7 +124,7 @@ def mock_search(req: NameRequest = Body(...)):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": 1.3}
+    return {"status": "ok", "version": 1.4}
 
 # uv run uvicorn server:app --reload
 # https://n0136mmn-8000.asse.devtunnels.ms/gis-report
