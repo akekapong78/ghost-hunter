@@ -29,6 +29,9 @@ class GisVectorItem(BaseModel):
 
 class GisReportResponse(BaseModel):
     results: List[GisVectorItem]
+    total: int
+    success: bool
+    message: str
 
 # DB connection
 def get_connection():
@@ -45,61 +48,66 @@ def search(req: NameRequest = Body(...)):
     names = [n.strip() for n in req.name_string.split("|") if n.strip()]
     results: List[GisVectorItem] = []
 
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            for name in names:
-                # Option 1. Fuzzy matching using pg_trgm
-                cur.execute("SET pg_trgm.similarity_threshold = 0.5;")
-                cur.execute("""
-                    SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
-                        similarity(customer_name, %s) AS similarity_score
-                    FROM gis_vector
-                    WHERE customer_name %% %s
-                    ORDER BY similarity_score DESC
-                    LIMIT 1;
-                """, (name, name))
-                rows = cur.fetchall()
-                for row in rows:
-                    results.append(GisVectorItem(
-                        ca_number=row[0],
-                        pea_number=row[1],
-                        customer_name=row[2],
-                        customer_address=row[3],
-                        office_code=row[4],
-                        lat=float(row[5]),
-                        long=float(row[6]),
-                        billing_month=row[7],
-                        similarity_score=float(row[8]),
-                    ))
-                if len(rows) > 0:
-                    print("done fuzzy: ", name)
-                    continue
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                for name in names:
+                    # Option 1. Fuzzy matching using pg_trgm
+                    cur.execute("SET pg_trgm.similarity_threshold = 0.5;")
+                    cur.execute("""
+                        SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
+                            similarity(customer_name, %s) AS similarity_score
+                        FROM gis_vector
+                        WHERE customer_name %% %s
+                        ORDER BY similarity_score DESC
+                        LIMIT 1;
+                    """, (name, name))
+                    rows = cur.fetchall()
+                    for row in rows:
+                        results.append(GisVectorItem(
+                            ca_number=row[0],
+                            pea_number=row[1],
+                            customer_name=row[2],
+                            customer_address=row[3],
+                            office_code=row[4],
+                            lat=float(row[5]),
+                            long=float(row[6]),
+                            billing_month=row[7],
+                            similarity_score=float(row[8]),
+                        ))
+                    if len(rows) > 0:
+                        print("done fuzzy: ", name)
+                        continue
 
-                # Obtion 2. embedding similarity
-                query_embedding = embedder.encode(name).tolist()
-                cur.execute("""
-                    SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
-                           1 - (embedding <=> %s::vector) AS similarity_score
-                    FROM gis_vector
-                    ORDER BY similarity_score DESC
-                    LIMIT 1;
-                """, (query_embedding,))
-                rows = cur.fetchall()
-                for row in rows:
-                    results.append(GisVectorItem(
-                        ca_number=row[0],
-                        pea_number=row[1],
-                        customer_name=row[2],
-                        customer_address=row[3],
-                        office_code=row[4],
-                        lat=float(row[5]),
-                        long=float(row[6]),
-                        billing_month=row[7],
-                        similarity_score=float(row[8]),
-                    ))
-                print("done embedding: ", name)
+                    # Obtion 2. embedding similarity
+                    query_embedding = embedder.encode(name).tolist()
+                    cur.execute("""
+                        SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
+                            1 - (embedding <=> %s::vector) AS similarity_score
+                        FROM gis_vector
+                        ORDER BY similarity_score DESC
+                        LIMIT 1;
+                    """, (query_embedding,))
+                    rows = cur.fetchall()
+                    for row in rows:
+                        results.append(GisVectorItem(
+                            ca_number=row[0],
+                            pea_number=row[1],
+                            customer_name=row[2],
+                            customer_address=row[3],
+                            office_code=row[4],
+                            lat=float(row[5]),
+                            long=float(row[6]),
+                            billing_month=row[7],
+                            similarity_score=float(row[8]),
+                        ))
+                    print("done embedding: ", name)
 
-    return GisReportResponse(results=results)
+    except Exception as e:
+        print(e)
+        return GisReportResponse(results=[], total=0, success=False, message=str(e))
+
+    return GisReportResponse(results=results, total=len(results), success=True, message="success")
 
 
 # mock function
@@ -124,7 +132,7 @@ def mock_search(req: NameRequest = Body(...)):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": 1.4}
+    return {"status": "ok", "version": 1.5}
 
 # uv run uvicorn server:app --reload
 # https://n0136mmn-8000.asse.devtunnels.ms/gis-report
