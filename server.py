@@ -4,9 +4,14 @@ from typing import List
 import random
 from sentence_transformers import SentenceTransformer
 import psycopg2
+import logging
+
 
 # โหลด embedding model
 embedder = SentenceTransformer("intfloat/multilingual-e5-small")
+
+# Logging
+logging.basicConfig(level=logging.INFO, format="%(message)s", encoding="utf-8")
 
 # FastAPI app
 app = FastAPI(title="Mock GIS Vector API")
@@ -55,8 +60,17 @@ def search(req: NameRequest = Body(...)):
                     # Option 1. Fuzzy matching using pg_trgm
                     cur.execute("SET pg_trgm.similarity_threshold = 0.5;")
                     cur.execute("""
-                        SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
-                            similarity(customer_name, %s) AS similarity_score
+                        SELECT 
+                            ca_number, 
+                            pea_number, 
+                            -- Mask customer_name (แสดง 10 ตัวแรก ที่เหลือเป็น *)
+                            LEFT(customer_name, 10) || REPEAT('*', GREATEST(LENGTH(customer_name) - 10, 0)) AS customer_name,
+                            customer_address, 
+                            office_code, 
+                            lat, 
+                            long, 
+                            billing_month,
+                            similarity(customer_name, %s) AS similarity_score                            
                         FROM gis_vector
                         WHERE customer_name %% %s
                         ORDER BY similarity_score DESC
@@ -76,13 +90,22 @@ def search(req: NameRequest = Body(...)):
                             similarity_score=float(row[8]),
                         ))
                     if len(rows) > 0:
-                        print("done fuzzy: ", name)
+                        logging.info(f"done fuzzy: {name}")
                         continue
 
                     # Obtion 2. embedding similarity
                     query_embedding = embedder.encode(name).tolist()
                     cur.execute("""
-                        SELECT ca_number, pea_number, customer_name, customer_address, office_code, lat, long, billing_month,
+                        SELECT 
+                            ca_number, 
+                            pea_number, 
+                            -- Mask customer_name (แสดง 10 ตัวแรก ที่เหลือเป็น *)
+                            LEFT(customer_name, 10) || REPEAT('*', GREATEST(LENGTH(customer_name) - 10, 0)) AS customer_name,
+                            customer_address, 
+                            office_code, 
+                            lat, 
+                            long, 
+                            billing_month,
                             1 - (embedding <=> %s::vector) AS similarity_score
                         FROM gis_vector
                         ORDER BY similarity_score DESC
@@ -101,10 +124,10 @@ def search(req: NameRequest = Body(...)):
                             billing_month=row[7],
                             similarity_score=float(row[8]),
                         ))
-                    print("done embedding: ", name)
+                    logging.info(f"done embedding: {name}")
 
     except Exception as e:
-        print(e)
+        logging.error(e)
         return GisReportResponse(results=[], total=0, success=False, message=str(e))
 
     return GisReportResponse(results=results, total=len(results), success=True, message="success")
@@ -132,7 +155,7 @@ def mock_search(req: NameRequest = Body(...)):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": 1.5}
+    return {"status": "ok", "version": 1.5, "message": "add log and try catch"}
 
 # uv run uvicorn server:app --reload
 # https://n0136mmn-8000.asse.devtunnels.ms/gis-report
