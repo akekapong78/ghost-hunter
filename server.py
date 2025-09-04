@@ -63,8 +63,7 @@ def search(req: NameRequest = Body(...)):
                         SELECT 
                             ca_number, 
                             pea_number, 
-                            -- Mask customer_name (แสดง 10 ตัวแรก ที่เหลือเป็น *)
-                            LEFT(customer_name, 10) || REPEAT('*', GREATEST(LENGTH(customer_name) - 10, 0)) AS customer_name,
+                            LEFT(customer_name, 5) || REPEAT('*', GREATEST(LENGTH(customer_name) - 5, 0)) AS customer_name,
                             customer_address, 
                             office_code, 
                             lat, 
@@ -99,8 +98,7 @@ def search(req: NameRequest = Body(...)):
                         SELECT 
                             ca_number, 
                             pea_number, 
-                            -- Mask customer_name (แสดง 10 ตัวแรก ที่เหลือเป็น *)
-                            LEFT(customer_name, 10) || REPEAT('*', GREATEST(LENGTH(customer_name) - 10, 0)) AS customer_name,
+                            LEFT(customer_name, 5) || REPEAT('*', GREATEST(LENGTH(customer_name) - 5, 0)) AS customer_name,
                             customer_address, 
                             office_code, 
                             lat, 
@@ -155,7 +153,7 @@ def mock_search(req: NameRequest = Body(...)):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": 1.5, "message": "add log and try catch"}
+    return {"status": "ok", "version": 1.5, "message": "add last 5 * for names"}
 
 # uv run uvicorn server:app --reload
 # https://n0136mmn-8000.asse.devtunnels.ms/gis-report
