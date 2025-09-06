@@ -106,9 +106,10 @@ def search(req: NameRequest = Body(...)):
                             billing_month,
                             1 - (embedding <=> %s::vector) AS similarity_score
                         FROM gis_vector
-                        ORDER BY similarity_score DESC
+                        WHERE embedding IS NOT NULL
+                        ORDER BY embedding <=> %s::vector
                         LIMIT 1;
-                    """, (query_embedding,))
+                    """, (query_embedding, query_embedding))
                     rows = cur.fetchall()
                     for row in rows:
                         results.append(GisVectorItem(
@@ -153,7 +154,7 @@ def mock_search(req: NameRequest = Body(...)):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": 1.7, "message": "add last 5 * for names"}
+    return {"status": "ok", "version": 2.0, "message": "update indexing for faster"}
 
 # uv run uvicorn server:app --reload
 # cd nssm-2.24\win64
